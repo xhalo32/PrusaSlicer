@@ -769,8 +769,10 @@ void Sidebar::priv::show_preset_comboboxes()
 
 // Sidebar / public
 
-Sidebar::Sidebar(Plater *parent)
-    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(40 * wxGetApp().em_unit(), -1)), p(new priv(parent))
+//Sidebar::Sidebar(Plater *parent)
+//    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(40 * wxGetApp().em_unit(), -1)), p(new priv(parent))
+Sidebar::Sidebar(wxPanel* parent, Plater* plater)
+    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(40 * wxGetApp().em_unit(), -1)), p(new priv(plater))
 {
     p->scrolled = new wxScrolledWindow(this);
     p->scrolled->SetScrollbars(0, 100, 1, 2);
@@ -1105,9 +1107,12 @@ void Sidebar::jump_to_option(size_t selected)
     const Search::Option& opt = p->searcher.get_option(selected);
     wxGetApp().get_tab(opt.type)->activate_option(opt.opt_key, opt.category);
 
+    // Switch to the patel
+    p->plater->switch_to_settings_panels(opt.type);
+
     // Switch to the Settings NotePad, if plater is shown
-    if (p->plater->IsShown())
-        wxGetApp().mainframe->switch_to(false);
+//    if (p->plater->IsShown())
+//        wxGetApp().mainframe->switch_to(false);
 }
 
 ObjectManipulation* Sidebar::obj_manipul()
@@ -1410,7 +1415,7 @@ void Sidebar::collapse(bool collapse)
 {
     p->is_collapsed = collapse;
 
-    this->Show(!collapse);
+//    this->Show(!collapse);
     p->plater->Layout();
 
     // save collapsing state to the AppConfig
@@ -1547,6 +1552,9 @@ struct Plater::priv
     View3D* view3D;
     GLToolbar view_toolbar;
     Preview *preview;
+
+    wxPanel* sidebar_panel {nullptr };
+    wxBoxSizer* sidebar_sizer {nullptr};
 
     BackgroundSlicingProcess    background_process;
     bool suppressed_backround_processing_update { false };
@@ -1892,7 +1900,8 @@ struct Plater::priv
     void show_view3D_labels(bool show) { if (current_panel == view3D) view3D->get_canvas3d()->show_labels(show); }
 
     bool is_sidebar_collapsed() const   { return sidebar->is_collapsed(); }
-    void collapse_sidebur(bool show)    { sidebar->collapse(show); }
+//    void collapse_sidebar(bool show)    { sidebar_panel->collapse(show); }
+    void collapse_sidebar(bool show)    { sidebar_panel->Show(!show); sidebar->collapse(show);  }
 
 #if ENABLE_SLOPE_RENDERING
     bool is_view3D_slope_shown() const { return (current_panel == view3D) && view3D->get_canvas3d()->is_slope_shown(); }
@@ -2103,7 +2112,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
         "brim_width", "perimeters", "perimeter_extruder", "fill_density", "infill_extruder", "top_solid_layers", 
         "support_material", "support_material_extruder", "support_material_interface_extruder", "support_material_contact_distance", "raft_layers"
         }))
-    , sidebar(new Sidebar(q))
+//    , sidebar(new Sidebar(q))
     , delayed_scene_refresh(false)
     , view_toolbar(GLToolbar::Radio, "View")
     , m_project_filename(wxEmptyString)
@@ -2135,6 +2144,15 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     sla_print.set_status_callback(statuscb);
     this->q->Bind(EVT_SLICING_UPDATE, &priv::on_slicing_update, this);
 
+    sidebar_panel = new wxPanel(q, wxID_ANY, wxDefaultPosition, wxSize(40 * wxGetApp().em_unit(), -1));
+    sidebar_sizer = new wxBoxSizer(wxHORIZONTAL);
+
+    sidebar = new Sidebar(sidebar_panel, q);
+    sidebar_sizer->Add(sidebar, 1, wxEXPAND);
+
+    sidebar_panel->SetSizer(sidebar_sizer);
+    sidebar_sizer->SetSizeHints(sidebar_panel);
+
 #if ENABLE_NON_STATIC_CANVAS_MANAGER
     view3D = new View3D(q, &model, config, &background_process);
     preview = new Preview(q, &model, config, &background_process, &gcode_preview_data, [this]() { schedule_background_process(); });
@@ -2165,7 +2183,8 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     panel_sizer->Add(view3D, 1, wxEXPAND | wxALL, 0);
     panel_sizer->Add(preview, 1, wxEXPAND | wxALL, 0);
     hsizer->Add(panel_sizer, 1, wxEXPAND | wxALL, 0);
-    hsizer->Add(sidebar, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+//    hsizer->Add(sidebar, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+    hsizer->Add(sidebar_panel, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
     q->SetSizer(hsizer);
 
     init_object_menu();
@@ -2202,7 +2221,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     view3D_canvas->Bind(EVT_GLCANVAS_RESETGIZMOS, [this](SimpleEvent&) { reset_all_gizmos(); });
     view3D_canvas->Bind(EVT_GLCANVAS_UNDO, [this](SimpleEvent&) { this->undo(); });
     view3D_canvas->Bind(EVT_GLCANVAS_REDO, [this](SimpleEvent&) { this->redo(); });
-    view3D_canvas->Bind(EVT_GLCANVAS_COLLAPSE_SIDEBAR, [this](SimpleEvent&) { this->q->collapse_sidebur(!this->q->is_sidebar_collapsed());  });
+    view3D_canvas->Bind(EVT_GLCANVAS_COLLAPSE_SIDEBAR, [this](SimpleEvent&) { this->q->collapse_sidebar(!this->q->is_sidebar_collapsed());  });
     view3D_canvas->Bind(EVT_GLCANVAS_RESET_LAYER_HEIGHT_PROFILE, [this](SimpleEvent&) { this->view3D->get_canvas3d()->reset_layer_height_profile(); });
     view3D_canvas->Bind(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, [this](Event<float>& evt) { this->view3D->get_canvas3d()->adaptive_layer_height_profile(evt.data); });
     view3D_canvas->Bind(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, [this](HeightProfileSmoothEvent& evt) { this->view3D->get_canvas3d()->smooth_layer_height_profile(evt.data); });
@@ -2238,6 +2257,8 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_TAB, [this](SimpleEvent&) { select_next_view_3D(); });
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_MOVE_DOUBLE_SLIDER, [this](wxKeyEvent& evt) { preview->move_double_slider(evt); });
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_EDIT_COLOR_CHANGE, [this](wxKeyEvent& evt) { preview->edit_double_slider(evt); });
+    preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_COLLAPSE_SIDEBAR, [this](SimpleEvent&) { this->q->collapse_sidebar(!this->q->is_sidebar_collapsed());  });
+
 
     q->Bind(EVT_SLICING_COMPLETED, &priv::on_slicing_completed, this);
     q->Bind(EVT_PROCESS_COMPLETED, &priv::on_process_completed, this);
@@ -2293,7 +2314,38 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     this->take_snapshot(_L("New Project"));
 
     // collapse sidebar according to saved value
-    sidebar->collapse(wxGetApp().app_config->get("collapsed_sidebar") == "1");
+//    sidebar->collapse(wxGetApp().app_config->get("collapsed_sidebar") == "1");
+}
+
+void Plater::create_settings_panels()
+{
+    wxGetApp().update_label_colours_from_appconfig();
+    auto add_settings_panel = [this](Tab* panel) {
+        panel->create_preset_tab();
+//        panel->BUILD();
+        p->sidebar_sizer->Add(panel, 1, wxEXPAND);
+    };
+    add_settings_panel(new TabPrint(p->sidebar_panel));
+    add_settings_panel(new TabFilament(p->sidebar_panel));
+    add_settings_panel(new TabSLAPrint(p->sidebar_panel));
+    add_settings_panel(new TabSLAMaterial(p->sidebar_panel));
+    add_settings_panel(new TabPrinter(p->sidebar_panel));
+}
+
+void Plater::switch_to_settings_panels(Preset::Type type)
+{
+    wxSize sz = wxSize((type == Preset::TYPE_INVALID ? 40 : 90) * wxGetApp().em_unit(), -1);
+    p->sidebar_panel->SetMinSize(sz);
+    p->sidebar_panel->SetSize(sz);
+
+    for (Tab* tab : wxGetApp().tabs_list)
+        tab->Show(tab->type() == type);
+
+    p->sidebar->Show(type == Preset::TYPE_INVALID);
+
+    collapse_sidebar(false);
+
+//    this->Layout();
 }
 
 Plater::priv::~priv()
@@ -4763,7 +4815,7 @@ bool Plater::are_view3D_labels_shown() const { return p->are_view3D_labels_shown
 void Plater::show_view3D_labels(bool show) { p->show_view3D_labels(show); }
 
 bool Plater::is_sidebar_collapsed() const { return p->is_sidebar_collapsed(); }
-void Plater::collapse_sidebur(bool show) { p->collapse_sidebur(show); }
+void Plater::collapse_sidebar(bool show) { p->collapse_sidebar(show); }
 
 #if ENABLE_SLOPE_RENDERING
 bool Plater::is_view3D_slope_shown() const { return p->is_view3D_slope_shown(); }

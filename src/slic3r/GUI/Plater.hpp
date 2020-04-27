@@ -91,7 +91,8 @@ class Sidebar : public wxPanel
 {
     ConfigOptionMode    m_mode;
 public:
-    Sidebar(Plater *parent);
+//    Sidebar(Plater *parent);
+    Sidebar(wxPanel* parent, Plater *plater);
     Sidebar(Sidebar &&) = delete;
     Sidebar(const Sidebar &) = delete;
     Sidebar &operator=(Sidebar &&) = delete;
@@ -167,6 +168,8 @@ public:
     void load_project(const wxString& filename);
     void add_model();
     void extract_config_from_project();
+    void create_settings_panels();
+    void switch_to_settings_panels(Preset::Type type);
 
     std::vector<size_t> load_files(const std::vector<boost::filesystem::path>& input_files, bool load_model = true, bool load_config = true);
     // To be called when providing a list of files to the GUI slic3r on command line.
@@ -185,7 +188,7 @@ public:
     void show_view3D_labels(bool show);
 
     bool is_sidebar_collapsed() const;
-    void collapse_sidebur(bool show);
+    void collapse_sidebar(bool show);
 
 #if ENABLE_SLOPE_RENDERING
     bool is_view3D_slope_shown() const;

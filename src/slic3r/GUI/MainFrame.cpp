@@ -287,6 +287,8 @@ void MainFrame::update_title()
 
 void MainFrame::init_tabpanel()
 {
+    m_plater = new Plater(this, this);
+
     // wxNB_NOPAGETHEME: Disable Windows Vista theme for the Notebook background. The theme performance is terrible on Windows 10
     // with multiple high resolution displays connected.
     m_tabpanel = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
@@ -311,11 +313,12 @@ void MainFrame::init_tabpanel()
     });
 
 //!    m_plater = new Slic3r::GUI::Plater(m_tabpanel, this);
-    m_plater = new Plater(this, this);
 
     wxGetApp().plater_ = m_plater;
+    m_plater->create_settings_panels();
+
 //    m_tabpanel->AddPage(m_plater, _(L("Plater")));
-    m_tabpanel->AddPage(new wxPanel(m_tabpanel), _L("Plater")); // empty panel just for Plater tab
+//    m_tabpanel->AddPage(new wxPanel(m_tabpanel), _L("Plater")); // empty panel just for Plater tab
 
     wxGetApp().obj_list()->create_popup_menus();
 
@@ -326,7 +329,7 @@ void MainFrame::init_tabpanel()
     // or when the preset's "modified" status changes.
     Bind(EVT_TAB_PRESETS_CHANGED, &MainFrame::on_presets_changed, this); // #ys_FIXME_to_delete
 
-    create_preset_tabs();
+//    create_preset_tabs();
 
     if (m_plater) {
         // load initial config
@@ -844,7 +847,7 @@ void MainFrame::init_menubar()
             [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_labels_shown(); }, this);
 #endif // ENABLE_SLOPE_RENDERING
         append_menu_check_item(viewMenu, wxID_ANY, _(L("&Collapse sidebar")), _(L("Collapse sidebar")),
-            [this](wxCommandEvent&) { m_plater->collapse_sidebur(!m_plater->is_sidebar_collapsed()); }, this,
+            [this](wxCommandEvent&) { m_plater->collapse_sidebar(!m_plater->is_sidebar_collapsed()); }, this,
             [this]() { return true; }, [this]() { return m_plater->is_sidebar_collapsed(); }, this);
     }
 

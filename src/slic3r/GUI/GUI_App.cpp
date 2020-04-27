@@ -375,6 +375,9 @@ bool GUI_App::on_init_inner()
     mainframe = new MainFrame();
     mainframe->switch_to(true); // hide settings tabs after first Layout
 
+    // collapse sidebar according to saved value
+    plater_->collapse_sidebar(app_config->get("collapsed_sidebar") == "1");
+
     sidebar().obj_list()->init_objects(); // propagate model objects to object list
 //     update_mode(); // !!! do that later
     SetTopWindow(mainframe);

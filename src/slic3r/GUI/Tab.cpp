@@ -78,10 +78,23 @@ void Tab::Highlighter::blink()
 }
 
 Tab::Tab(wxNotebook* parent, const wxString& title, Preset::Type type) :
-    m_parent(parent), m_title(title), m_type(type)
+    m_parent(parent), m_title(title), m_type(type), m_em_unit(wxGetApp().em_unit())
 {
-    Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_LEFT | wxTAB_TRAVERSAL/*, name*/);
+    Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_LEFT | wxTAB_TRAVERSAL);
+    Init(m_parent);
+}
+
+Tab::Tab(wxPanel* parent, const wxString& title, Preset::Type type) : wxPanel(parent),
+    m_parent(parent), m_title(title), m_type(type), m_em_unit(wxGetApp().em_unit())
+{
+//    Create(parent, wxID_ANY, wxDefaultPosition, wxSize(60* m_em_unit, -1));
+    Init(m_parent);
+}
+
+void Tab::Init(wxWindow* parent)
+{
     this->SetFont(Slic3r::GUI::wxGetApp().normal_font());
+    this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
 
     m_compatible_printers.type			= Preset::TYPE_PRINTER;
     m_compatible_printers.key_list		= "compatible_printers";
@@ -96,8 +109,6 @@ Tab::Tab(wxNotebook* parent, const wxString& title, Preset::Type type) :
     m_compatible_prints.dialog_label 	= _(L("Select the print profiles this profile is compatible with.")).ToUTF8();
 
     wxGetApp().tabs_list.push_back(this);
-
-    m_em_unit = wxGetApp().em_unit();
 
     m_config_manipulation = get_config_manipulation();
 
@@ -189,8 +200,8 @@ void Tab::create_preset_tab()
     add_scaled_button(panel, &m_search_btn, "search");
     m_search_btn->SetToolTip(format_wxstr(_L("Click to start a search or use %1% shortcut"), "Ctrl+F"));
 
-    add_scaled_button(panel, &m_to_plater_btn, "plater");
-    m_to_plater_btn->SetToolTip(_L("Switch to the Plater"));
+//    add_scaled_button(panel, &m_to_plater_btn, "plater");
+//    m_to_plater_btn->SetToolTip(_L("Switch to the Plater"));
 
     // Determine the theme color of OS (dark or light)
     auto luma = wxGetApp().get_colour_approx_luma(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
@@ -223,7 +234,7 @@ void Tab::create_preset_tab()
         }
     }));
     m_search_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent) { wxGetApp().plater()->search(false); });
-    m_to_plater_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent) { wxGetApp().mainframe->switch_to(true); });
+//    m_to_plater_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent) { wxGetApp().mainframe->switch_to(true); });
 
     // Colors for ui "decoration"
     m_sys_label_clr			= wxGetApp().get_label_clr_sys();
@@ -236,7 +247,7 @@ void Tab::create_preset_tab()
     const float scale_factor = /*wxGetApp().*/em_unit(this)*0.1;// GetContentScaleFactor();
     m_hsizer = new wxBoxSizer(wxHORIZONTAL);
     sizer->Add(m_hsizer, 0, wxEXPAND | wxBOTTOM, 3);
-    m_hsizer->Add(m_presets_choice, 0, wxLEFT | wxRIGHT | wxTOP | wxALIGN_CENTER_VERTICAL, 3);
+    m_hsizer->Add(m_presets_choice, 1, wxLEFT | wxRIGHT | wxTOP | wxALIGN_CENTER_VERTICAL, 3);
     m_hsizer->AddSpacer(int(4*scale_factor));
     m_hsizer->Add(m_btn_save_preset, 0, wxALIGN_CENTER_VERTICAL);
     m_hsizer->AddSpacer(int(4 * scale_factor));
@@ -250,15 +261,11 @@ void Tab::create_preset_tab()
     m_hsizer->Add(m_undo_btn, 0, wxALIGN_CENTER_VERTICAL);
     m_hsizer->AddSpacer(int(32 * scale_factor));
     m_hsizer->Add(m_search_btn, 0, wxALIGN_CENTER_VERTICAL);
-    // m_hsizer->AddStretchSpacer(32);
+    m_hsizer->AddSpacer(int(32 * scale_factor));
     // StretchSpacer has a strange behavior under OSX, so
     // There is used just additional sizer for m_mode_sizer with right alignment
-    wxBoxSizer* top_right_sizer = new wxBoxSizer(wxHORIZONTAL);
-    top_right_sizer->Add(m_to_plater_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, wxOSX ? 15 : 10);
-    top_right_sizer->Add(m_mode_sizer, 0, wxALIGN_CENTER_VERTICAL);
     auto mode_sizer = new wxBoxSizer(wxVERTICAL);
-//    mode_sizer->Add(m_mode_sizer, 1, wxALIGN_RIGHT);
-    mode_sizer->Add(top_right_sizer, 1, wxALIGN_RIGHT);
+    mode_sizer->Add(m_mode_sizer, 1, wxALIGN_RIGHT);
     m_hsizer->Add(mode_sizer, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, wxOSX ? 15 : 10);
 
     //Horizontal sizer to hold the tree and the selected page.
@@ -814,6 +821,7 @@ void Tab::update_mode()
     m_mode = wxGetApp().get_mode();
 
     // update mode for ModeSizer
+    if (m_mode_sizer)
     m_mode_sizer->SetMode(m_mode);
 
     update_visibility();
@@ -844,6 +852,7 @@ void Tab::msw_rescale()
 {
     m_em_unit = wxGetApp().em_unit();
 
+    if (m_mode_sizer)
     m_mode_sizer->msw_rescale();
 
     m_presets_choice->SetSize(35 * m_em_unit, -1);

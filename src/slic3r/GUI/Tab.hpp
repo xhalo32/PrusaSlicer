@@ -112,7 +112,8 @@ wxDECLARE_EVENT(EVT_TAB_PRESETS_CHANGED, SimpleEvent);
 using PageShp = std::shared_ptr<Page>;
 class Tab: public wxPanel
 {
-	wxNotebook*			m_parent;
+//	wxNotebook*			m_parent;
+	wxWindow*			m_parent;
 #ifdef __WXOSX__
 	wxPanel*			m_tmp_panel;
 	int					m_size_move = -1;
@@ -126,13 +127,13 @@ protected:
 	ScalableButton*		m_btn_save_preset;
 	ScalableButton*		m_btn_delete_preset;
 	ScalableButton*		m_btn_hide_incompatible_presets;
-	ScalableButton*		m_to_plater_btn;
+//	ScalableButton*		m_to_plater_btn;
 	wxBoxSizer*			m_hsizer;
 	wxBoxSizer*			m_left_sizer;
 	wxTreeCtrl*			m_treectrl;
 	wxImageList*		m_icons;
 
-    ModeSizer*     m_mode_sizer;
+    ModeSizer*     m_mode_sizer {nullptr};
 
    	struct PresetDependencies {
 		Preset::Type type	  = Preset::TYPE_INVALID;
@@ -262,9 +263,11 @@ public:
     int                 m_update_cnt = 0;
 
 public:
-// 	Tab(wxNotebook* parent, const wxString& title, const char* name); 
     Tab(wxNotebook* parent, const wxString& title, Preset::Type type);
+    Tab(wxPanel* parent, const wxString& title, Preset::Type type);
     ~Tab() {}
+
+	void Init(wxWindow* parent);
 
 	wxWindow*	parent() const { return m_parent; }
 	wxString	title()	 const { return m_title; }
@@ -357,8 +360,9 @@ class TabPrint : public Tab
 {
 public:
 	TabPrint(wxNotebook* parent) : 
-// 		Tab(parent, _(L("Print Settings")), L("print")) {}
         Tab(parent, _(L("Print Settings")), Slic3r::Preset::TYPE_PRINT) {}
+	TabPrint(wxPanel* parent) :
+		Tab(parent, _(L("Print Settings")), Slic3r::Preset::TYPE_PRINT) {}
 	~TabPrint() {}
 
 	ogStaticText*	m_recommended_thin_wall_thickness_description_line = nullptr;
@@ -384,7 +388,8 @@ class TabFilament : public Tab
     std::map<std::string, wxCheckBox*> m_overrides_options;
 public:
 	TabFilament(wxNotebook* parent) : 
-// 		Tab(parent, _(L("Filament Settings")), L("filament")) {}
+		Tab(parent, _(L("Filament Settings")), Slic3r::Preset::TYPE_FILAMENT) {}
+	TabFilament(wxPanel* parent) :
 		Tab(parent, _(L("Filament Settings")), Slic3r::Preset::TYPE_FILAMENT) {}
 	~TabFilament() {}
 
@@ -419,9 +424,10 @@ public:
 
     PrinterTechnology               m_printer_technology = ptFFF;
 
-// 	TabPrinter(wxNotebook* parent) : Tab(parent, _(L("Printer Settings")), L("printer")) {}
     TabPrinter(wxNotebook* parent) : 
         Tab(parent, _(L("Printer Settings")), Slic3r::Preset::TYPE_PRINTER) {}
+	TabPrinter(wxPanel* parent) :
+		Tab(parent, _(L("Printer Settings")), Slic3r::Preset::TYPE_PRINTER) {}
 	~TabPrinter() {}
 
 	void		build() override;
@@ -447,9 +453,10 @@ class TabSLAMaterial : public Tab
 {
 public:
     TabSLAMaterial(wxNotebook* parent) :
-// 		Tab(parent, _(L("Material Settings")), L("sla_material")) {}
 		Tab(parent, _(L("Material Settings")), Slic3r::Preset::TYPE_SLA_MATERIAL) {}
-    ~TabSLAMaterial() {}
+	TabSLAMaterial(wxPanel* parent) :
+		Tab(parent, _(L("Material Settings")), Slic3r::Preset::TYPE_SLA_MATERIAL) {}
+	~TabSLAMaterial() {}
 
 	void		build() override;
 	void		reload_config() override;
@@ -462,9 +469,10 @@ class TabSLAPrint : public Tab
 {
 public:
     TabSLAPrint(wxNotebook* parent) :
-//         Tab(parent, _(L("Print Settings")), L("sla_print")) {}
         Tab(parent, _(L("Print Settings")), Slic3r::Preset::TYPE_SLA_PRINT) {}
-    ~TabSLAPrint() {}
+	TabSLAPrint(wxPanel* parent) :
+		Tab(parent, _(L("Print Settings")), Slic3r::Preset::TYPE_SLA_PRINT) {}
+	~TabSLAPrint() {}
     void		build() override;
 	void		reload_config() override;
     void		update() override;
