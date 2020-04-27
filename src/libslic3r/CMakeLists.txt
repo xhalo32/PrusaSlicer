@@ -155,6 +155,8 @@ add_library(libslic3r STATIC
     PrintConfig.hpp
     PrintObject.cpp
     PrintRegion.cpp
+    PNGRead.hpp
+    PNGRead.cpp
     Semver.cpp
     ShortestPath.cpp
     ShortestPath.hpp
@@ -292,6 +294,8 @@ target_link_libraries(libslic3r
     TBB::tbb
     libslic3r_cgal
     ${CMAKE_DL_LIBS}
+    PNG::PNG
+    ZLIB::ZLIB
     )
 
 if (TARGET OpenVDB::openvdb)

@@ -11,10 +11,11 @@ add_executable(${_TEST_NAME}_tests
 	test_placeholder_parser.cpp
 	test_polygon.cpp
 	test_stl.cpp
-        test_meshsimplify.cpp
-        test_meshboolean.cpp
-        test_marchingsquares.cpp
-        test_timeutils.cpp
+    test_meshsimplify.cpp
+    test_meshboolean.cpp
+    test_marchingsquares.cpp
+    test_png_io.cpp
+    test_timeutils.cpp
 	)
 
 if (TARGET OpenVDB::openvdb)
