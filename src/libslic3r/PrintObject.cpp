@@ -2013,7 +2013,7 @@ std::vector<ExPolygons> PrintObject::slice_modifiers(size_t region_id, const std
 			                	out = std::move(this_slices);
 			                	merge.assign(out.size(), false);
 			                } else {
-			                	for (size_t i = 0; i < out.size(); ++ i)
+                                for (size_t i = 0; i < this_slices.size(); ++ i)
                                     if (! this_slices[i].empty()) {
 			                			if (! out[i].empty()) {
 			                				append(out[i], this_slices[i]);
