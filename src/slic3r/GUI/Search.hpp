@@ -159,6 +159,63 @@ protected:
 };
 
 
+
+// ----------------------------------------------------------------------------
+// MyListModel
+// ----------------------------------------------------------------------------
+
+class MyListModel : public wxDataViewVirtualListModel
+{
+public:
+    enum
+    {
+        Col_Icon,
+        Col_MarkedText,
+        Col_Max
+    };
+
+    MyListModel();
+
+    // helper methods to change the model
+
+    void Clear();
+    void Prepend(const std::string& text);
+    /*
+    void DeleteItem(const wxDataViewItem& item);
+    void DeleteItems(const wxDataViewItemArray& items);
+    */
+
+
+    // implementation of base class virtuals to define model
+
+    virtual unsigned int GetColumnCount() const wxOVERRIDE
+    {
+        return Col_Max;
+    }
+
+    virtual wxString GetColumnType(unsigned int col) const wxOVERRIDE
+    {        
+        if (col == Col_Icon)
+            return "wxBitmap";//"wxDataViewIconText";
+
+        return "string";
+    }
+
+    virtual void GetValueByRow(wxVariant& variant,
+        unsigned int row, unsigned int col) const wxOVERRIDE;
+    virtual bool GetAttrByRow(unsigned int row, unsigned int col,
+        wxDataViewItemAttr& attr) const wxOVERRIDE;
+    virtual bool SetValueByRow(const wxVariant& variant,
+        unsigned int row, unsigned int col) wxOVERRIDE;
+
+private:
+    std::vector<std::pair<wxString, int>> m_Values;
+    ScalableBitmap          m_icon[5];
+};
+
+
+
+
 //------------------------------------------
 //          SearchDialog
 //------------------------------------------
@@ -169,10 +226,18 @@ class SearchDialog : public GUI::DPIDialog
     wxString default_string;
 
     wxTextCtrl*     search_line    { nullptr };
-    wxListBox*      search_list    { nullptr };
+//    wxListBox*      search_list    { nullptr };
     wxCheckBox*     check_category { nullptr };
     wxCheckBox*     check_group    { nullptr };
     wxCheckBox*     check_english  { nullptr };
+
+    wxListCtrl*     search_list    { nullptr };
+    wxImageList*    icons;
+    std::vector<ScalableBitmap>     scaled_icons_list = {};
+
+    wxDataViewCtrl*  search_dvc    { nullptr };
+    wxObjectDataPtr<MyListModel> m_list_model;
+    wxDataViewColumn* m_attributes;
 
     OptionsSearcher* searcher;
 
@@ -180,11 +245,13 @@ class SearchDialog : public GUI::DPIDialog
 
     void OnInputText(wxCommandEvent& event);
     void OnLeftUpInTextCtrl(wxEvent& event);
-    
+/*    
     void OnMouseMove(wxMouseEvent& event); 
     void OnMouseClick(wxMouseEvent& event);
     void OnSelect(wxCommandEvent& event);
+*/    void OnSelect(wxListEvent& event);
     void OnKeyDown(wxKeyEvent& event);
+    void OnKeyDownL(wxListEvent& event);
 
     void OnCheck(wxCommandEvent& event);
 
@@ -198,6 +265,8 @@ public:
 protected:
     void on_dpi_changed(const wxRect& suggested_rect) override;
 };
+
+
 
 
 } // Search namespace
