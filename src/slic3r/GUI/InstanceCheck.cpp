@@ -429,7 +429,7 @@ namespace MessageHandlerDBusInternal
 	static void handle_method_another_instance(DBusConnection *connection, DBusMessage *request)
 	{
 	    DBusError     err;
-	    char*         text= "";
+	    char*         text = nullptr;
 		wxEvtHandler* evt_handler;
 
 	    dbus_error_init(&err);
