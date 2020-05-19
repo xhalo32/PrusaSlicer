@@ -77,6 +77,7 @@
 #include "../Utils/UndoRedo.hpp"
 #include "RemovableDriveManager.hpp"
 #include "InstanceCheck.hpp"
+#include "NotificationManager.hpp"
 
 #ifdef __APPLE__
 #include "Gizmos/GLGizmosManager.hpp"
@@ -1592,6 +1593,8 @@ struct Plater::priv
     GLToolbar collapse_toolbar;
     Preview *preview;
 
+	NotificationManager* notification_manager;
+
     BackgroundSlicingProcess    background_process;
     bool suppressed_backround_processing_update { false };
 
@@ -2090,6 +2093,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     // Update an enable of the collapse_toolbar: if sidebar is collapsed, then collapse_toolbar should be visible
     if (is_collapsed)
         wxGetApp().app_config->set("show_collapse_button", "1");
+	notification_manager = new NotificationManager();
 }
 
 Plater::priv::~priv()
@@ -3420,6 +3424,7 @@ void Plater::priv::on_slicing_update(SlicingStatusEvent &evt)
 
 void Plater::priv::on_slicing_completed(wxCommandEvent &)
 {
+	notification_manager->push_notification(NotificationType::SlicingComplete, *q->get_current_canvas3D());
     switch (this->printer_technology) {
     case ptFFF:
         this->update_fff_scene();
@@ -3442,6 +3447,8 @@ void Plater::priv::on_process_completed(wxCommandEvent &evt)
     this->background_process.stop();
     this->statusbar()->reset_cancel_callback();
     this->statusbar()->stop_busy();
+
+	notification_manager->push_notification("Process completed", *q->get_current_canvas3D());
 
     const bool canceled = evt.GetInt() < 0;
     const bool error = evt.GetInt() == 0;
@@ -5645,6 +5652,16 @@ const Mouse3DController& Plater::get_mouse3d_controller() const
 Mouse3DController& Plater::get_mouse3d_controller()
 {
     return p->mouse3d_controller;
+}
+
+const NotificationManager* Plater::get_notification_manager() const
+{
+	return p->notification_manager;
+}
+
+NotificationManager* Plater::get_notification_manager()
+{
+	return p->notification_manager;
 }
 
 bool Plater::can_delete() const { return p->can_delete(); }
