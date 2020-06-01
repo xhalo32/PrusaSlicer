@@ -77,11 +77,12 @@ void GLGizmoFdmSupports::set_fdm_support_data(ModelObject* model_object, const S
     const ModelObject* mo = m_c->selection_info() ? m_c->selection_info()->model_object() : nullptr;
 
     if (mo && selection.is_from_single_instance()
-     && (mo->id() != m_old_mo_id || mo->volumes.size() != m_old_volumes_size))
+     && (m_schedule_update || mo->id() != m_old_mo_id || mo->volumes.size() != m_old_volumes_size))
     {
         update_from_model_object();
         m_old_mo_id = mo->id();
         m_old_volumes_size = mo->volumes.size();
+        m_schedule_update = false;
     }
 }
 
@@ -836,17 +837,12 @@ void GLGizmoFdmSupports::on_stop_dragging()
 
 void GLGizmoFdmSupports::on_load(cereal::BinaryInputArchive&)
 {
-    // This can be called from the internal gizmo stack, or from the main stack.
-    // If it's the main stack, there is no guarantee that the selection is what
-    // it should be. It does not matter much, because the gizmo will be updated
-    // by set_fdm_supports_data soon after.
-
-    // If it's the internal stack, we must call update_from_model_object, because
-    // we must synchronize gizmo with deserialized Model.
-
-
-    if (m_internal_stack_active)
-        update_from_model_object();
+    // We should update the gizmo from current ModelObject, but it is not
+    // possible at this point. That would require having updated selection and
+    // common gizmos data, which is not done at this point. Instead, save
+    // a flag to do the update in set_fdm_support_data, which will be called
+    // soon after.
+    m_schedule_update = true;
 }
 
 
