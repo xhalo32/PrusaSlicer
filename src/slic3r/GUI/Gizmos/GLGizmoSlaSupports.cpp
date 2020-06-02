@@ -885,10 +885,6 @@ CommonGizmosDataID GLGizmoSlaSupports::on_get_requirements() const
 
 void GLGizmoSlaSupports::on_set_state()
 {
-    //const ModelObject* mo = m_c->selection_info()->model_object();
-    const ModelObject* mo = m_parent.get_selection().get_model()->objects[m_parent.get_selection().get_object_idx()];
-
-
     if (m_state == m_old_state)
         return;
 
@@ -905,7 +901,7 @@ void GLGizmoSlaSupports::on_set_state()
         });
     }
     if (m_state == Off && m_old_state != Off) { // the gizmo was just turned Off
-        bool will_ask = mo && m_editing_mode && unsaved_changes();
+        bool will_ask = m_editing_mode && unsaved_changes();
         if (will_ask) {
             wxGetApp().CallAfter([this]() {
                 // Following is called through CallAfter, because otherwise there was a problem
