@@ -242,7 +242,15 @@ class SupportTreeBuildsteps {
         const Vec3d& s,
         const Vec3d& dir,
         double r,
-        double safety_d = std::nan(""));
+        double safety_d);
+
+    EigenMesh3D::hit_result bridge_mesh_intersect(
+        const Vec3d& s,
+        const Vec3d& dir,
+        double r)
+    {
+        return bridge_mesh_intersect(s, dir, r, m_cfg.safety_distance_mm);
+    }
     
     template<class...Args>
     inline double bridge_mesh_distance(Args&&...args) {

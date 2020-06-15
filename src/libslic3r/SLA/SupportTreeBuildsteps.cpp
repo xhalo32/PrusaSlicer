@@ -246,7 +246,7 @@ EigenMesh3D::hit_result SupportTreeBuildsteps::pinhead_mesh_intersect(
 }
 
 EigenMesh3D::hit_result SupportTreeBuildsteps::bridge_mesh_intersect(
-    const Vec3d &src, const Vec3d &dir, double r, double safety_d)
+    const Vec3d &src, const Vec3d &dir, double r, double sd)
 {
     static const size_t SAMPLES = 8;
     PointRing<SAMPLES> ring{dir};
@@ -255,25 +255,20 @@ EigenMesh3D::hit_result SupportTreeBuildsteps::bridge_mesh_intersect(
     
     // Hit results
     std::array<Hit, SAMPLES> hits;
-
-    double sd = std::isnan(safety_d) ? m_cfg.safety_distance_mm : safety_d;
-    sd = sd * r / m_cfg.head_back_radius_mm;
-
-    bool ins_check = sd < m_cfg.safety_distance_mm;
     
     ccr::enumerate(hits.begin(), hits.end(), 
-                [this, r, src, ins_check, &ring, dir, sd] (Hit &hit, size_t i) {
+                [this, r, src, /*ins_check,*/ &ring, dir, sd] (Hit &hit, size_t i) {
 
         // Point on the circle on the pin sphere
         Vec3d p = ring.get(i, src, r + sd);
         
         auto hr = m_mesh.query_ray_hit(p + r * dir, dir);
         
-        if(ins_check && hr.is_inside()) {
+        if(/*ins_check && */hr.is_inside()) {
             if(hr.distance() > 2 * r + sd) hit = Hit(0.0);
             else {
                 // re-cast the ray from the outside of the object
-                hit = m_mesh.query_ray_hit(p + (hr.distance() + 2 * sd) * dir, dir);
+                hit = m_mesh.query_ray_hit(p + (hr.distance() + EPSILON) * dir, dir);
             }
         } else hit = hr;
     });
@@ -499,7 +494,7 @@ bool SupportTreeBuildsteps::create_ground_pillar(const Vec3d &jp,
             normal_mode = false;
 
             if (t > m_cfg.max_bridge_length_mm || endp(Z) < gndlvl) {
-                m_builder.add_pillar(head_id, jp, radius);
+                if (head_id >= 0) m_builder.add_pillar(head_id, jp, radius);
                 return false;
             }
         }
@@ -507,7 +502,7 @@ bool SupportTreeBuildsteps::create_ground_pillar(const Vec3d &jp,
 
     // Check if the deduced route is sane and exit with error if not.
     if (bridge_mesh_distance(jp, dir, radius) < (endp - jp).norm()) {
-        m_builder.add_pillar(head_id, jp, radius);
+        if (head_id >= 0) m_builder.add_pillar(head_id, jp, radius);
         return false;
     }
 
@@ -798,13 +793,16 @@ void SupportTreeBuildsteps::routing_to_ground()
         cl_centroids.emplace_back(hid);
         
         Head &h = m_builder.head(hid);
-        h.transform();
         
         if (!create_ground_pillar(h.junction_point(), h.dir, h.r_back_mm, h.id)) {
             BOOST_LOG_TRIVIAL(warning)
                 << "Pillar cannot be created for support point id: " << hid;
-            h.invalidate();
+            m_iheads_onmodel.emplace_back(h.id);
+//            h.invalidate();
+            continue;
         }
+
+        h.transform();
     }
     
     // now we will go through the clusters ones again and connect the
@@ -854,12 +852,14 @@ bool SupportTreeBuildsteps::connect_to_ground(Head &head, const Vec3d &dir)
     if(!std::isinf(tdown)) return false;
     
     Vec3d endp = hjp + d * dir;
-    m_builder.add_bridge(head.id, endp);
-    m_builder.add_junction(endp, head.r_back_mm);
+    bool ret = false;
+
+    if ((ret = create_ground_pillar(endp, dir, head.r_back_mm))) {
+        m_builder.add_bridge(head.id, endp);
+        m_builder.add_junction(endp, head.r_back_mm);
+    }
     
-    this->create_ground_pillar(endp, dir, head.r_back_mm);
-    
-    return true;
+    return ret;
 }
 
 bool SupportTreeBuildsteps::connect_to_ground(Head &head)
