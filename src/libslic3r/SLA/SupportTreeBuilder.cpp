@@ -209,7 +209,12 @@ const TriangleMesh &SupportTreeBuilder::merged_mesh(size_t steps) const
         if (ctl().stopcondition()) break;
         merged.merge(get_mesh(bs, steps));
     }
-    
+
+    for (auto &anch : m_anchors) {
+        if (ctl().stopcondition()) break;
+        merged.merge(get_mesh(anch, steps));
+    }
+
     if (ctl().stopcondition()) {
         // In case of failure we have to return an empty mesh
         m_meshcache = TriangleMesh();

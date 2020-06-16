@@ -1035,7 +1035,7 @@ bool SupportTreeBuildsteps::connect_to_model_body(Head &head)
 
     head.transform();
 
-    long pillar_id = m_builder.add_pillar(head.id, hit.distance() + h);
+    long pillar_id = m_builder.add_pillar(head.id, hjp.z() - endp.z());
     Pillar &pill = m_builder.pillar(pillar_id);
 
     Vec3d taildir = endp - hitp;

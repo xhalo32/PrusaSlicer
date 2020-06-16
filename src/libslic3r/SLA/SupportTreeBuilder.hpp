@@ -169,11 +169,11 @@ struct Pillar {
 // A base for pillars or bridges that end on the ground
 struct Pedestal {
     Vec3d pos;
-    double height, radius;
+    double height, r_bottom, r_top;
     long id = ID_UNSET;
 
-    Pedestal(const Vec3d &p, double h = 3., double r = 2.)
-        : pos{p}, height{h}, radius{r}
+    Pedestal(const Vec3d &p, double h, double rbottom, double rtop)
+        : pos{p}, height{h}, r_bottom{rbottom}, r_top{rtop}
     {}
 };
 
@@ -305,7 +305,10 @@ public:
     {
         std::lock_guard<Mutex> lk(m_mutex);
         assert(pid >= 0 && size_t(pid) < m_pillars.size());
-        m_pedestals.emplace_back(m_pillars[size_t(pid)].endpt, baseheight, radius);
+        Pillar& pll = m_pillars[size_t(pid)];
+        m_pedestals.emplace_back(pll.endpt, std::min(baseheight, pll.height),
+                                 std::max(radius, pll.r), pll.r);
+
         m_pedestals.back().id = m_pedestals.size() - 1;
         m_meshcache_valid = false;
 //        m_pillars[size_t(pid)].add_base(baseheight, radius);

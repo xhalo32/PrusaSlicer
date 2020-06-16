@@ -214,7 +214,7 @@ Contour3D pinhead(double r_pin, double r_back, double length, size_t steps)
     return mesh;
 }
 
-Contour3D pedestal(const Vec3d &endpt, double baseheight, double radius, size_t steps)
+Contour3D halfcone(double baseheight, double r_bottom, double r_top, const Vec3d &pos, size_t steps)
 {
     assert(steps > 0);
 
@@ -225,25 +225,25 @@ Contour3D pedestal(const Vec3d &endpt, double baseheight, double radius, size_t 
 
     Contour3D base;
 
-    double a = 2*PI/steps;
-    double z = endpt(Z) + baseheight;
+    double a = 2 * PI / steps;
+    double z = pos(Z) + baseheight;
 
     for(size_t i = 0; i < steps; ++i) {
         double phi = i*a;
-        double x = endpt(X) + radius * std::cos(phi);
-        double y = endpt(Y) + radius * std::sin(phi);
+        double x = pos(X) + r_top * std::cos(phi);
+        double y = pos(Y) + r_top * std::sin(phi);
         base.points.emplace_back(x, y, z);
     }
 
     for(size_t i = 0; i < steps; ++i) {
         double phi = i*a;
-        double x = endpt(X) + radius*std::cos(phi);
-        double y = endpt(Y) + radius*std::sin(phi);
+        double x = pos(X) + r_bottom * std::cos(phi);
+        double y = pos(Y) + r_bottom * std::sin(phi);
         base.points.emplace_back(x, y, z - baseheight);
     }
 
-    auto ep = endpt; ep(Z) += baseheight;
-    base.points.emplace_back(endpt);
+    auto ep = pos; ep(Z) += baseheight;
+    base.points.emplace_back(pos);
     base.points.emplace_back(ep);
 
     auto& indices = base.faces3;
