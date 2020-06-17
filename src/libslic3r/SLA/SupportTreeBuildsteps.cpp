@@ -612,31 +612,29 @@ bool SupportTreeBuildsteps::create_ground_pillar(const Vec3d &jp,
         }
     }
 
+    double h = (jp - endp).norm();
+
     // Check if the deduced route is sane and exit with error if not.
-    if (bridge_mesh_distance(jp, dir, radius) < (endp - jp).norm()) {
+    if (bridge_mesh_distance(jp, dir, radius) < h) {
         if (head_id >= 0) m_builder.add_pillar(head_id, 0.);
         return false;
     }
 
     // Straigh path down, no area to dodge
     if (normal_mode) {
-        double h = jp.z() - endp.z();
         pillar_id = head_id >= 0 ? m_builder.add_pillar(head_id, h) :
-                                   m_builder.add_pillar(jp, h, radius);
+                                   m_builder.add_pillar(endp, h, radius);
 
         if (can_add_base)
-            m_builder.add_pillar_base(pillar_id, m_cfg.base_height_mm,
-                                      m_cfg.base_radius_mm);
+            add_pillar_base(pillar_id);
     } else {
 
         // Insert the bridge to get around the forbidden area
-//        Vec3d pgnd{endp.x(), endp.y(), gndlvl};
-        double h = endp.z() - gndlvl;
-        pillar_id = m_builder.add_pillar(endp, h, radius);
+        Vec3d pgnd{endp.x(), endp.y(), gndlvl};
+        pillar_id = m_builder.add_pillar(pgnd, endp.z() - gndlvl, radius);
 
         if (can_add_base)
-            m_builder.add_pillar_base(pillar_id, m_cfg.base_height_mm,
-                                      m_cfg.base_radius_mm);
+            add_pillar_base(pillar_id);
 
         m_builder.add_bridge(jp, endp, radius);
         m_builder.add_junction(endp, radius);
@@ -912,11 +910,8 @@ void SupportTreeBuildsteps::routing_to_ground()
             BOOST_LOG_TRIVIAL(warning)
                 << "Pillar cannot be created for support point id: " << hid;
             m_iheads_onmodel.emplace_back(h.id);
-//            h.invalidate();
             continue;
         }
-
-        h.transform();
     }
     
     // now we will go through the clusters ones again and connect the
@@ -939,7 +934,6 @@ void SupportTreeBuildsteps::routing_to_ground()
             if (c == cidx) continue;
             
             auto &sidehead = m_builder.head(c);
-            sidehead.transform();
             
             if (!connect_to_nearpillar(sidehead, centerpillarID) &&
                 !search_pillar_and_connect(sidehead)) {
@@ -1016,6 +1010,12 @@ bool SupportTreeBuildsteps::connect_to_model_body(Head &head)
     if (it == m_head_to_ground_scans.end()) return false;
     
     auto &hit = it->second;
+
+    if (!hit.is_hit()) {
+        // TODO scan for potential anchor points on model surface
+        return false;
+    }
+
     Vec3d hjp = head.junction_point();
     double zangle = std::asin(hit.direction()(Z));
     zangle = std::max(zangle, PI/4);
@@ -1033,13 +1033,11 @@ bool SupportTreeBuildsteps::connect_to_model_body(Head &head)
     Vec3d hitp = std::abs(hitdiff) < 2*head.r_back_mm?
                      center_hit.position() : hit.position();
 
-    head.transform();
-
     long pillar_id = m_builder.add_pillar(head.id, hjp.z() - endp.z());
     Pillar &pill = m_builder.pillar(pillar_id);
 
     Vec3d taildir = endp - hitp;
-    double dist = distance(endp, hitp) + m_cfg.head_penetration_mm;
+    double dist = (hitp - endp).norm() + m_cfg.head_penetration_mm;
     double w = dist - 2 * head.r_pin_mm - head.r_back_mm;
 
     if (w < 0.) {
@@ -1050,12 +1048,6 @@ bool SupportTreeBuildsteps::connect_to_model_body(Head &head)
     m_builder.add_anchor(head.r_back_mm, head.r_pin_mm, w,
                          m_cfg.head_penetration_mm, taildir, hitp);
 
-//    Head tailhead(head.r_back_mm, head.r_pin_mm, w,
-//                  m_cfg.head_penetration_mm, taildir, hitp);
-
-//    tailhead.transform();
-//    pill.base = tailhead.mesh;
-    
     m_pillar_index.guarded_insert(pill.endpoint(), pill.id);
     
     return true;
@@ -1111,11 +1103,11 @@ void SupportTreeBuildsteps::routing_to_model()
         auto& head = m_builder.head(idx);
         
         // Search nearby pillar
-        if (search_pillar_and_connect(head)) { head.transform(); return; }
+        if (search_pillar_and_connect(head)) { return; }
         
         // Cannot connect to nearby pillar. We will try to search for
         // a route to the ground.
-        if (connect_to_ground(head)) { head.transform(); return; }
+        if (connect_to_ground(head)) { return; }
         
         // No route to the ground, so connect to the model body as a last resort
         if (connect_to_model_body(head)) { return; }
@@ -1300,12 +1292,14 @@ void SupportTreeBuildsteps::interconnect_pillars()
 
         if (found)
             for (unsigned n = 0; n < needpillars; n++) {
-                Vec3d  s = spts[n];
-                Pillar p(s, s.z() -  gnd, pillar().r);
-//                p.add_base(m_cfg.base_height_mm, m_cfg.base_radius_mm);
+                Vec3d s = spts[n];
+                Pillar p(Vec3d{s.x(), s.y(), gnd}, s.z() - gnd, pillar().r);
 
                 if (interconnect(pillar(), p)) {
                     Pillar &pp = m_builder.pillar(m_builder.add_pillar(p));
+
+                    add_pillar_base(pp.id);
+
                     m_pillar_index.insert(pp.endpoint(), unsigned(pp.id));
 
                     m_builder.add_junction(s, pillar().r);

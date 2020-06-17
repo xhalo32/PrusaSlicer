@@ -91,12 +91,7 @@ struct Head {
          const Vec3d &direction = DOWN,  // direction (normal to the dull end)
          const Vec3d &offset = {0, 0, 0}      // displacement
          );
-    
-    void transform()
-    {
-        // TODO: remove occurences
-    }
-    
+
     inline double real_width() const
     {
         return 2 * r_pin_mm + width_mm + 2 * r_back_mm ;
@@ -119,13 +114,6 @@ struct Head {
     }
 };
 
-struct Join {
-    enum Types {
-        jtPillarBrigde, jtHeadPillar, jtPillarPedestal, jtBridgePedestal,
-        jtPillarAnchor, jtBridgeAnchor
-    };
-};
-
 // A junction connecting bridges and pillars
 struct Junction {
     double r = 1;
@@ -135,7 +123,6 @@ struct Junction {
 
     Junction(const Vec3d &tr, double r_mm) : r(r_mm), pos(tr) {}
 };
-
 
 struct Pillar {
     double height, r;
@@ -162,8 +149,6 @@ struct Pillar {
     }
     
     const Vec3d& endpoint() const { return endpt; }
-    
-//    Pillar& add_base(double baseheight = 3, double radius = 2);
 };
 
 // A base for pillars or bridges that end on the ground
@@ -311,7 +296,6 @@ public:
 
         m_pedestals.back().id = m_pedestals.size() - 1;
         m_meshcache_valid = false;
-//        m_pillars[size_t(pid)].add_base(baseheight, radius);
     }
 
     template<class...Args> const Anchor& add_anchor(Args&&...args)
