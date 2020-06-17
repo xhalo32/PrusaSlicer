@@ -1,3 +1,5 @@
+#define NOMINMAX
+
 #include <libslic3r/SLA/SupportTreeBuilder.hpp>
 #include <libslic3r/SLA/SupportTreeBuildsteps.hpp>
 #include <libslic3r/SLA/SupportTreeMesher.hpp>
@@ -104,6 +106,18 @@ SupportTreeBuilder &SupportTreeBuilder::operator=(const SupportTreeBuilder &o)
     m_model_height = o.m_model_height;
     ground_level = o.ground_level;
     return *this;
+}
+
+void SupportTreeBuilder::add_pillar_base(long pid, double baseheight, double radius)
+{
+    std::lock_guard<Mutex> lk(m_mutex);
+    assert(pid >= 0 && size_t(pid) < m_pillars.size());
+    Pillar& pll = m_pillars[size_t(pid)];
+    m_pedestals.emplace_back(pll.endpt, std::min(baseheight, pll.height),
+                             std::max(radius, pll.r), pll.r);
+
+    m_pedestals.back().id = m_pedestals.size() - 1;
+    m_meshcache_valid = false;
 }
 
 const TriangleMesh &SupportTreeBuilder::merged_mesh(size_t steps) const

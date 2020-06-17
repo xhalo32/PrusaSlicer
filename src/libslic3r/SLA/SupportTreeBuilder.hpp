@@ -286,17 +286,7 @@ public:
         return pillar.id;
     }
     
-    void add_pillar_base(long pid, double baseheight = 3, double radius = 2)
-    {
-        std::lock_guard<Mutex> lk(m_mutex);
-        assert(pid >= 0 && size_t(pid) < m_pillars.size());
-        Pillar& pll = m_pillars[size_t(pid)];
-        m_pedestals.emplace_back(pll.endpt, std::min(baseheight, pll.height),
-                                 std::max(radius, pll.r), pll.r);
-
-        m_pedestals.back().id = m_pedestals.size() - 1;
-        m_meshcache_valid = false;
-    }
+    void add_pillar_base(long pid, double baseheight = 3, double radius = 2);
 
     template<class...Args> const Anchor& add_anchor(Args&&...args)
     {
