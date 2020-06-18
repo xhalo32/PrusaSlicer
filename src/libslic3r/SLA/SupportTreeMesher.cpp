@@ -212,43 +212,43 @@ Contour3D pinhead(double r_pin, double r_back, double length, size_t steps)
     return mesh;
 }
 
-Contour3D halfcone(double baseheight, double r_bottom, double r_top, const Vec3d &pos, size_t steps)
+Contour3D halfcone(double       baseheight,
+                   double       r_bottom,
+                   double       r_top,
+                   const Vec3d &pos,
+                   size_t       steps)
 {
     assert(steps > 0);
 
-    if(baseheight <= 0) return {};
-
-    assert(steps >= 0);
-    auto last = int(steps - 1);
+    if (baseheight <= 0 || steps <= 0) return {};
 
     Contour3D base;
 
-    double a = 2 * PI / steps;
-    double z = pos(Z) + baseheight;
-
-    for(size_t i = 0; i < steps; ++i) {
-        double phi = i*a;
-        double x = pos(X) + r_top * std::cos(phi);
-        double y = pos(Y) + r_top * std::sin(phi);
-        base.points.emplace_back(x, y, z);
+    double a    = 2 * PI / steps;
+    auto   last = int(steps - 1);
+    Vec3d  ep{pos.x(), pos.y(), pos.z() + baseheight};
+    for (size_t i = 0; i < steps; ++i) {
+        double phi = i * a;
+        double x   = pos.x() + r_top * std::cos(phi);
+        double y   = pos.y() + r_top * std::sin(phi);
+        base.points.emplace_back(x, y, ep.z());
     }
 
-    for(size_t i = 0; i < steps; ++i) {
-        double phi = i*a;
-        double x = pos(X) + r_bottom * std::cos(phi);
-        double y = pos(Y) + r_bottom * std::sin(phi);
-        base.points.emplace_back(x, y, z - baseheight);
+    for (size_t i = 0; i < steps; ++i) {
+        double phi = i * a;
+        double x   = pos.x() + r_bottom * std::cos(phi);
+        double y   = pos.y() + r_bottom * std::sin(phi);
+        base.points.emplace_back(x, y, pos.z());
     }
 
-    auto ep = pos; ep(Z) += baseheight;
     base.points.emplace_back(pos);
     base.points.emplace_back(ep);
 
-    auto& indices = base.faces3;
-    auto hcenter = int(base.points.size() - 1);
-    auto lcenter = int(base.points.size() - 2);
-    auto offs = int(steps);
-    for(int i = 0; i < last; ++i) {
+    auto &indices = base.faces3;
+    auto  hcenter = int(base.points.size() - 1);
+    auto  lcenter = int(base.points.size() - 2);
+    auto  offs    = int(steps);
+    for (int i = 0; i < last; ++i) {
         indices.emplace_back(i, i + offs, offs + i + 1);
         indices.emplace_back(i, offs + i + 1, i + 1);
         indices.emplace_back(i, i + 1, hcenter);

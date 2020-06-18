@@ -580,7 +580,7 @@ bool SupportTreeBuildsteps::create_ground_pillar(const Vec3d &jp,
     bool   normal_mode  = true;
     Vec3d  dir          = sourcedir;
 
-    auto to_floor = [gndlvl](const Vec3d &p) { return Vec3d{p.x(), p.y(), gndlvl}; };
+    auto to_floor = [&gndlvl](const Vec3d &p) { return Vec3d{p.x(), p.y(), gndlvl}; };
 
     if (m_cfg.object_elevation_mm < EPSILON)
     {
@@ -599,6 +599,7 @@ bool SupportTreeBuildsteps::create_ground_pillar(const Vec3d &jp,
         // Try to move along the established bridge direction to dodge the
         // forbidden region for the endpoint.
         double t = -radius;
+        bool succ = true;
         while (std::sqrt(m_mesh.squared_distance(to_floor(endp))) < min_dist ||
                !std::isinf(bridge_mesh_distance(endp, DOWN, radius))) {
             t += radius;
@@ -607,8 +608,32 @@ bool SupportTreeBuildsteps::create_ground_pillar(const Vec3d &jp,
 
             if (t > m_cfg.max_bridge_length_mm || endp(Z) < gndlvl) {
                 if (head_id >= 0) m_builder.add_pillar(head_id, 0.);
-                return false;
+                succ = false;
+                break;
             }
+        }
+
+        if (!succ) {
+            if (can_add_base) {
+                can_add_base = false;
+                base_r       = 0.;
+                gndlvl -= m_mesh.ground_level_offset();
+                min_dist     = sd + base_r + EPSILON;
+                endp         = {jp(X), jp(Y), gndlvl + radius};
+
+                t = -radius;
+                while (std::sqrt(m_mesh.squared_distance(to_floor(endp))) < min_dist ||
+                       !std::isinf(bridge_mesh_distance(endp, DOWN, radius))) {
+                    t += radius;
+                    endp = jp + t * dir;
+                    normal_mode = false;
+
+                    if (t > m_cfg.max_bridge_length_mm || endp(Z) < (gndlvl + radius)) {
+                        if (head_id >= 0) m_builder.add_pillar(head_id, 0.);
+                        return false;
+                    }
+                }
+            } else return false;
         }
     }
 

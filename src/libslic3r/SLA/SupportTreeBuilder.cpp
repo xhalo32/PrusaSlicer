@@ -137,6 +137,7 @@ const TriangleMesh &SupportTreeBuilder::merged_mesh(size_t steps) const
     }
 
     for (auto &pedest : m_pedestals) {
+        if (ctl().stopcondition()) break;
         merged.merge(get_mesh(pedest, steps));
     }
     
