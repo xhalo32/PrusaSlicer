@@ -261,7 +261,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
                 set_value(double_to_string(val), true);
             }
             else if (((m_opt.sidetext.rfind("mm/s") != std::string::npos && val > m_opt.max) ||
-                     (m_opt.sidetext.rfind("mm ") != std::string::npos && val > 1)) &&
+                     (m_opt.sidetext.rfind("mm ") != std::string::npos && val > 5)) &&
                      (m_value.empty() || std::string(str.ToUTF8().data()) != boost::any_cast<std::string>(m_value)))
             {
                 if (!check_value) {
@@ -272,7 +272,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
                 const std::string sidetext = m_opt.sidetext.rfind("mm/s") != std::string::npos ? "mm/s" : "mm";
                 const wxString stVal = double_to_string(val, 2);
                 const wxString msg_text = from_u8((boost::format(_utf8(L("Do you mean %s%% instead of %s %s?\n"
-                    "Select YES if you want to change this value to %s%%, \n"
+                    "Select YES test if you want to change this value to %s%%, \n"
                     "or NO if you are sure that %s %s is a correct value."))) % stVal % stVal % sidetext % stVal % stVal % sidetext).str());
                 wxMessageDialog dialog(m_parent, msg_text, _(L("Parameter validation")) + ": " + m_opt_id , wxICON_WARNING | wxYES | wxNO);
                 if (dialog.ShowModal() == wxID_YES) {
